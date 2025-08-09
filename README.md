@@ -135,7 +135,7 @@ If the command attempts to open a browser and you see a `gio: Operation not supp
 
 ### Optional: relay through Mailcow
 
-To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it. The `start_demo.sh --mail` flag automates the setup below, but you must create `demo1@mail.local` and `demo2@mail.local` (password `demo123`) yourself.
+To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it. The `start_demo.sh --mail` flag automates the setup below and creates `demo1@mail.local` and `demo2@mail.local` (password `demo123`) for you.
 
 1. Start Mailcow:
 
@@ -148,12 +148,7 @@ To show the worm being relayed through a full mail server, you can run a local [
    docker compose up -d
    ```
 
-2. Create two mailboxes to watch the worm spread:
-
-   - Visit `https://mailcow.localhost` (or the hostname you set in `mailcow.conf`).
-   - Sign in to the admin UI (default credentials `admin` / `moohoo`).
-   - Add `demo1@mail.local` and `demo2@mail.local` with password `demo123`.
-   - You can check these mailboxes later via SOGo or Roundcube at `https://mailcow.localhost/SOGo/`.
+2. The script automatically provisions `demo1@mail.local` and `demo2@mail.local` with password `demo123`. You can verify or manage them by visiting `https://mailcow.localhost` (default admin credentials `admin` / `moohoo`). Check these mailboxes later via SOGo or Roundcube at `https://mailcow.localhost/SOGo/`.
 
 3. Configure the app to use Mailcow's SMTP service:
 
