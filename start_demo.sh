@@ -36,6 +36,11 @@ if [ "$MAIL" = true ]; then
       export MAILCOW_HOSTNAME=mail.local
       export MAILCOW_TZ=UTC
       export DOCKER_COMPOSE_VERSION=native
+      # BusyBox cp warns on the non-portable -n flag used in mailcow's
+      # generate_config.sh and can terminate this script due to set -e.
+      # Replace it with the POSIX-compliant --update=none option before
+      # running the config generator.
+      sed -i 's/cp -n/cp --update=none/' generate_config.sh
       yes "" | ./generate_config.sh >/dev/null
     fi
     docker compose up -d
