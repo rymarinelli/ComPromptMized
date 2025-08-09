@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Determine a Python interpreter. Prefer python3 but fall back to python.
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+  PYTHON=python
+else
+  echo "Python 3 is required but was not found" >&2
+  exit 1
+fi
+
 MAIL=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -24,7 +34,7 @@ trap cleanup EXIT
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "uv not found; installing with pip"
-  python -m pip install --user uv
+  "$PYTHON" -m pip install --user uv
 fi
 
 if [ ! -d ".venv" ]; then
@@ -59,7 +69,7 @@ if [ "$MAIL" = true ]; then
       IPV4_CIDR="$MAILCOW_IPV4_NETWORK"
       [[ "$IPV4_CIDR" != */* ]] && IPV4_CIDR="${IPV4_CIDR}/24"
     else
-      IPV4_CIDR=$(python <<'PY'
+      IPV4_CIDR=$($PYTHON <<'PY'
 import ipaddress, json, subprocess
 subnets=set()
 try:
