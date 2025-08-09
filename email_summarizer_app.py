@@ -13,7 +13,7 @@ from transformers import pipeline
 
 
 # Path to the bundled CSV with example emails
-EMAILS_CSV = (
+RagEmailsCsv_dir = (
     Path(__file__).parent / "RAG-based Worm" / "RAG Emails" / "Emails.csv"
 )
 
@@ -50,15 +50,54 @@ def get_summarizer():
         return None
 
 
+def render_email(email: dict) -> None:
+    """Display an email in a styled container."""
+    st.markdown(
+        f"""
+        <div class='email-card'>
+            <div><strong>From:</strong> {email['Sender']} <em>({email['SentOrRec']})</em></div>
+            <div style='margin-top:0.5rem; white-space:pre-wrap;'>{email['Body']}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_summary(text: str) -> None:
+    """Display a summary in a styled container."""
+    st.markdown(
+        f"""
+        <div class='summary-card'>{text}</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def main() -> None:
-    st.set_page_config(page_title="Email Summarizer", layout="wide")
+    st.set_page_config(page_title="Email Summarizer", page_icon="📧", layout="wide")
+    st.markdown(
+        """
+        <style>
+        .email-card, .summary-card {
+            padding:1rem;
+            border:1px solid #ddd;
+            border-radius:0.5rem;
+            background-color:#fff;
+        }
+        .summary-card {
+            background-color:#e8f4ff;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     st.title("Email Summarizer Demo")
 
-    if not EMAILS_CSV.exists():
-        st.error(f"Email CSV not found at {EMAILS_CSV}")
+    if not RagEmailsCsv_dir.exists():
+        st.error(f"Email CSV not found at {RagEmailsCsv_dir}")
         return
 
-    emails = load_emails(EMAILS_CSV)
+    emails = load_emails(RagEmailsCsv_dir)
 
     options = [f"{i + 1}: {e['Sender']} ({e['SentOrRec']})" for i, e in enumerate(emails)]
     selection = st.sidebar.selectbox(
@@ -70,7 +109,7 @@ def main() -> None:
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Original Email")
-        st.write(email["Body"])
+        render_email(email)
 
     summarizer = get_summarizer()
     if summarizer is None:
@@ -83,7 +122,7 @@ def main() -> None:
 
     with col2:
         st.subheader("Summary")
-        st.write(summary)
+        render_summary(summary)
 
 
 if __name__ == "__main__":

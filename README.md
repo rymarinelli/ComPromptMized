@@ -106,6 +106,15 @@ uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.p
 
 Then open [http://localhost:8501](http://localhost:8501) in your browser to view the app.
 
+If the command attempts to open a browser and you see a `gio: Operation not supported` message, simply copy the URL above into your browser manually.
+
+Streamlit collects anonymous usage statistics by default. To opt out, create `~/.streamlit/config.toml` with:
+
+```
+[browser]
+gatherUsageStats = false
+```
+
 # Running the code
 
 The next two code files were transformed into a Jupyter format to improve readability and simplify testing and experimentation. Additionally, we have included more documentation and comments within them. In this section, we will cover some aspects of running these files.
