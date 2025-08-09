@@ -57,10 +57,10 @@ if [ "$MAIL" = true ]; then
     # MAILCOW_IPV4_ADDRESS. Defaults avoid clashing with common Docker
     # networks.
     IPV4_CIDR="${MAILCOW_IPV4_NETWORK:-172.30.1.0/24}"
-    IPV4_NO_PREFIX="${IPV4_CIDR%/*}"
-    IPV4_NETWORK="${IPV4_NO_PREFIX%.*}"
+    IPV4_NETWORK="${IPV4_CIDR%/*}"
     IPV4_PREFIX="${IPV4_CIDR#*/}"
-    IPV4_ADDRESS="${MAILCOW_IPV4_ADDRESS:-${IPV4_NETWORK}.1}"
+    IPV4_HOST_BASE="${IPV4_NETWORK%.*}"
+    IPV4_ADDRESS="${MAILCOW_IPV4_ADDRESS:-${IPV4_HOST_BASE}.1}"
     sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_NETWORK}/" mailcow.conf
     sed -i "s/^IPV4_NETWORK_PREFIX=.*/IPV4_NETWORK_PREFIX=${IPV4_PREFIX}/" mailcow.conf
     sed -i "s/^IPV4_ADDRESS=.*/IPV4_ADDRESS=${IPV4_ADDRESS}/" mailcow.conf
