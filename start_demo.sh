@@ -122,7 +122,7 @@ if [ "$MAIL" = true ]; then
         fi
       done
       if [ -z "$add_user_script" ]; then
-        add_user_script=$(find . -name 'addmailuser*' -type f 2>/dev/null | head -n1 || true)
+        add_user_script=$(find . -type f \( -name addmailuser -o -name addmailuser.sh \) -print -quit 2>/dev/null || true)
       fi
       if [ -n "$add_user_script" ]; then
         bash "$add_user_script" demo1@mail.local demo123
