@@ -112,20 +112,11 @@ if [ "$MAIL" = true ]; then
         echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
         exit 1
       fi
-      add_user_script=""
-      for candidate in \
-        "./helper-scripts/addmailuser.sh" \
-        "./helper-scripts/addmailuser" \
-        "./addmailuser.sh" \
-        "./addmailuser"; do
-        if [ -x "$candidate" ]; then
-          add_user_script="$candidate"
-          break
-        fi
-      done
+      # Locate the addmailuser helper script even if it lacks execute permissions.
+      add_user_script=$(find . -name 'addmailuser*' -type f -print 2>/dev/null | head -n1 || true)
       if [ -n "$add_user_script" ]; then
-        "$add_user_script" demo1@mail.local demo123
-        "$add_user_script" demo2@mail.local demo123
+        bash "$add_user_script" demo1@mail.local demo123
+        bash "$add_user_script" demo2@mail.local demo123
       else
         echo "Could not find addmailuser helper script" >&2
       fi
