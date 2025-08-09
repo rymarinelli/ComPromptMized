@@ -13,7 +13,9 @@ from transformers import pipeline
 
 
 # Path to the bundled CSV with example emails
-EMAILS_CSV = Path("RAG-based Worm") / "RAG Emails" / "Emails.csv"
+EMAILS_CSV = (
+    Path(__file__).parent / "RAG-based Worm" / "RAG Emails" / "Emails.csv"
+)
 
 
 @st.cache_data
@@ -39,6 +41,10 @@ def get_summarizer():
 def main() -> None:
     st.set_page_config(page_title="Email Summarizer", layout="wide")
     st.title("Email Summarizer Demo")
+
+    if not EMAILS_CSV.exists():
+        st.error(f"Email CSV not found at {EMAILS_CSV}")
+        return
 
     emails = load_emails(EMAILS_CSV)
 

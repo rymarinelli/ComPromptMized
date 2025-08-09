@@ -101,8 +101,10 @@ uv sync
 3. Launch the demo:
 
 ```bash
-uv run streamlit run email_summarizer_app.py
+uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.port 8501
 ```
+
+Then open [http://localhost:8501](http://localhost:8501) in your browser to view the app.
 
 # Running the code
 
