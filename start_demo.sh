@@ -51,12 +51,18 @@ if [ "$MAIL" = true ]; then
       yes "" | ./generate_config.sh >/dev/null
     fi
 
-    # Choose a non-conflicting subnet for Mailcow's bridge network. These
-    # values may be overridden by setting MAILCOW_IPV4_NETWORK and
-    # MAILCOW_IPV4_ADDRESS before running the script.
-    IPV4_NETWORK="${MAILCOW_IPV4_NETWORK:-172.30.1.0/24}"
-    IPV4_ADDRESS="${MAILCOW_IPV4_ADDRESS:-172.30.1.1}"
-    sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_NETWORK//\//\\/}/" mailcow.conf
+    # Choose a non-conflicting subnet for Mailcow's bridge network. The
+    # network may be supplied as a CIDR (e.g. 192.168.10.0/24) via
+    # MAILCOW_IPV4_NETWORK, and a host address can be set with
+    # MAILCOW_IPV4_ADDRESS. Defaults avoid clashing with common Docker
+    # networks.
+    IPV4_CIDR="${MAILCOW_IPV4_NETWORK:-172.30.1.0/24}"
+    IPV4_NO_PREFIX="${IPV4_CIDR%/*}"
+    IPV4_NETWORK="${IPV4_NO_PREFIX%.*}"
+    IPV4_PREFIX="${IPV4_CIDR#*/}"
+    IPV4_ADDRESS="${MAILCOW_IPV4_ADDRESS:-${IPV4_NETWORK}.1}"
+    sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_NETWORK}/" mailcow.conf
+    sed -i "s/^IPV4_NETWORK_PREFIX=.*/IPV4_NETWORK_PREFIX=${IPV4_PREFIX}/" mailcow.conf
     sed -i "s/^IPV4_ADDRESS=.*/IPV4_ADDRESS=${IPV4_ADDRESS}/" mailcow.conf
 
     docker compose down >/dev/null 2>&1 || true

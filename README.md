@@ -102,7 +102,7 @@ Add `--mail` to the script to automatically clone and start a local Mailcow stac
 ./start_demo.sh --mail
 ```
 
-By default the script assigns Mailcow to the `172.30.1.0/24` subnet to avoid conflicts with existing Docker networks. Override this by setting `MAILCOW_IPV4_NETWORK` (and optionally `MAILCOW_IPV4_ADDRESS`) before running if your environment requires a different range.
+By default the script assigns Mailcow to the `172.30.1.0/24` subnet to avoid conflicts with existing Docker networks. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR range like `10.99.0.0/24` (and optionally `MAILCOW_IPV4_ADDRESS`) before running if your environment requires a different range.
 
 Press `Ctrl+C` when you're finished with the demo; the script automatically shuts down the Mailcow stack and removes its network to prevent conflicts on the next run.
 
