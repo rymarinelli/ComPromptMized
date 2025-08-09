@@ -96,7 +96,7 @@ Run the demo with a single script that installs uv, syncs dependencies, and laun
 ./start_demo.sh
 ```
 
-Add `--mail` to the script to automatically clone Mailcow (initializing its helper scripts), start a local stack, seed it with two demo inboxes (`demo1@mail.local` and `demo2@mail.local`, password `demo123`), and configure the app to relay through it. If the `addmailuser` helper isn't present, the script fetches it from Mailcow's repository using whatever branch your clone checked out (handling both `main` and `master`) so the demo accounts are still created. The script supplies default answers (`mail.local` FQDN, `UTC` timezone) to Mailcow's setup so it runs without prompts. Set `MAILCOW_HOSTNAME` or `MAILCOW_TZ` before running if you need different values. This requires Docker and docker compose:
+Add `--mail` to the script to automatically clone Mailcow, start a local stack, and configure the app to relay through it. You'll need to create two demo inboxes (`demo1@mail.local` and `demo2@mail.local`, password `demo123`) yourself via the Mailcow Web UI or API. The script supplies default answers (`mail.local` FQDN, `UTC` timezone) to Mailcow's setup so it runs without prompts. Set `MAILCOW_HOSTNAME` or `MAILCOW_TZ` before running if you need different values. This requires Docker and docker compose:
 
 ```bash
 ./start_demo.sh --mail
@@ -135,7 +135,7 @@ If the command attempts to open a browser and you see a `gio: Operation not supp
 
 ### Optional: relay through Mailcow
 
-To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it. The `start_demo.sh --mail` flag automates the setup below (including creation of `demo1@mail.local` and `demo2@mail.local` accounts with password `demo123`), but the steps are provided for reference if you prefer manual control.
+To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it. The `start_demo.sh --mail` flag automates the setup below, but you must create `demo1@mail.local` and `demo2@mail.local` (password `demo123`) yourself.
 
 1. Start Mailcow:
 

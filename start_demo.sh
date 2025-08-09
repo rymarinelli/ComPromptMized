@@ -117,40 +117,7 @@ if [ "$MAIL" = true ]; then
         echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
         exit 1
       fi
-      # Locate the addmailuser helper script even if it lacks execute
-      # permissions. Prefer a direct path inside helper-scripts/, fall back to a
-      # repo-wide search and, if still missing, attempt to download it from
-      # upstream so demo inboxes can be created.
-      add_user_script=""
-      for path in helper-scripts/addmailuser helper-scripts/addmailuser.sh; do
-        if [ -f "$path" ]; then
-          add_user_script="$path"
-          break
-        fi
-      done
-      if [ -z "$add_user_script" ]; then
-        add_user_script=$(find . -type f -name 'addmailuser*' -print -quit 2>/dev/null || true)
-      fi
-      if [ -z "$add_user_script" ]; then
-        tmp_script=$(mktemp)
-        branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo master)
-        for name in addmailuser addmailuser.sh; do
-          url="https://raw.githubusercontent.com/mailcow/mailcow-dockerized/${branch}/helper-scripts/${name}"
-          if curl -fsSL "$url" -o "$tmp_script"; then
-            add_user_script="$tmp_script"
-            break
-          fi
-        done
-        if [ -z "$add_user_script" ]; then
-          rm -f "$tmp_script"
-        fi
-      fi
-      if [ -n "$add_user_script" ]; then
-        bash "$add_user_script" demo1@mail.local demo123
-        bash "$add_user_script" demo2@mail.local demo123
-      else
-        echo "Could not find addmailuser helper script" >&2
-      fi
+      echo "Mailcow started. Create demo1@mail.local and demo2@mail.local with password demo123 via the Web UI or API."
     )
     STARTED_MAILCOW=true
   fi
