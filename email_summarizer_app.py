@@ -19,9 +19,7 @@ from transformers import pipeline
 
 
 # Path to the bundled CSV with example emails
-RagEmailsCsv_dir = (
-    Path(__file__).parent / "RAG-based Worm" / "RAG Emails" / "Emails.csv"
-)
+EMAILS_CSV = Path(__file__).parent / "RAG-based Worm" / "RAG Emails" / "Emails.csv"
 
 # Lightweight summarization model
 SUMMARIZER_MODEL = "sshleifer/distilbart-cnn-6-6"
@@ -169,11 +167,11 @@ def main() -> None:
     )
     st.title("Email Summarizer Demo")
 
-    if not RagEmailsCsv_dir.exists():
-        st.error(f"Email CSV not found at {RagEmailsCsv_dir}")
+    if not EMAILS_CSV.exists():
+        st.error(f"Email CSV not found at {EMAILS_CSV}")
         return
 
-    emails = load_emails(RagEmailsCsv_dir)
+    emails = load_emails(EMAILS_CSV)
 
     options = [f"{i + 1}: {e['Sender']} ({e['SentOrRec']})" for i, e in enumerate(emails)]
     selection = st.sidebar.selectbox(
