@@ -108,11 +108,18 @@ if [ "$MAIL" = true ]; then
       echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
       exit 1
     fi
-    add_user_script="./helper-scripts/addmailuser"
-    if [ ! -x "$add_user_script" ]; then
-      add_user_script="./addmailuser"
-    fi
-    if [ -x "$add_user_script" ]; then
+    add_user_script=""
+    for candidate in \
+      "./helper-scripts/addmailuser.sh" \
+      "./helper-scripts/addmailuser" \
+      "./addmailuser.sh" \
+      "./addmailuser"; do
+      if [ -x "$candidate" ]; then
+        add_user_script="$candidate"
+        break
+      fi
+    done
+    if [ -n "$add_user_script" ]; then
       "$add_user_script" demo1@mail.local demo123
       "$add_user_script" demo2@mail.local demo123
     else
