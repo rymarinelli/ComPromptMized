@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Determine a Python interpreter. Prefer python3 but fall back to python.
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+  PYTHON=python
+else
+  echo "Python 3 is required but was not found" >&2
+  exit 1
+fi
+
 MAIL=false
+STARTED_MAILCOW=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --mail)
@@ -16,7 +27,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 cleanup() {
-  if [ "$MAIL" = true ] && [ -d mailcow-dockerized ]; then
+  if [ "$STARTED_MAILCOW" = true ]; then
     (cd mailcow-dockerized && docker compose down >/dev/null 2>&1 || true)
   fi
 }
@@ -24,7 +35,7 @@ trap cleanup EXIT
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "uv not found; installing with pip"
-  python -m pip install --user uv
+  "$PYTHON" -m pip install --user uv
 fi
 
 if [ ! -d ".venv" ]; then
@@ -34,50 +45,94 @@ fi
 uv sync
 
 if [ "$MAIL" = true ]; then
-  if [ ! -d mailcow-dockerized ]; then
-    git clone https://github.com/mailcow/mailcow-dockerized
+  if docker network inspect mailcowdockerized_mailcow-network >/dev/null 2>&1; then
+    echo "Mailcow network already exists; skipping Mailcow setup."
+  else
+    if [ ! -d mailcow-dockerized ]; then
+      git clone https://github.com/mailcow/mailcow-dockerized
+    fi
+    git -C mailcow-dockerized submodule update --init --recursive >/dev/null 2>&1 || true
+    (
+      cd mailcow-dockerized
+      if [ ! -f mailcow.conf ]; then
+        export MAILCOW_HOSTNAME=mail.local
+        export MAILCOW_TZ=UTC
+        export DOCKER_COMPOSE_VERSION=native
+        # BusyBox cp warns on the non-portable -n flag used in mailcow's
+        # generate_config.sh and can terminate this script due to set -e.
+        # Replace it with the POSIX-compliant --update=none option before
+        # running the config generator.
+        sed -i 's/cp -n/cp --update=none/' generate_config.sh
+        yes "" | ./generate_config.sh >/dev/null
+      fi
+
+      # Choose a non-conflicting subnet for Mailcow's bridge network. The network
+      # may be supplied via MAILCOW_IPV4_NETWORK as either a CIDR (e.g.
+      # 192.168.10.0/24) or just the network base (e.g. 192.168.10). When no
+      # network is provided, probe for the first free /24 within 172.30.0.0/16 by
+      # attempting to create a temporary Docker network.
+
+      choose_subnet() {
+        if [ -n "${MAILCOW_IPV4_NETWORK:-}" ]; then
+          local net="$MAILCOW_IPV4_NETWORK"
+          if [[ "$net" == */* ]]; then
+            echo "$net"
+          else
+            net="${net%.0}"
+            echo "${net}.0/24"
+          fi
+          return 0
+        fi
+        for i in $(seq 0 255); do
+          local cidr="172.30.${i}.0/24"
+          if docker network create mailcow-probe --subnet "$cidr" >/dev/null 2>&1; then
+            docker network rm mailcow-probe >/dev/null 2>&1 || true
+            echo "$cidr"
+            return 0
+          fi
+        done
+        return 1
+      }
+
+      IPV4_CIDR=$(choose_subnet) || {
+        echo "Could not find a free subnet in 172.30.0.0/16." >&2
+        echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
+        exit 1
+      }
+
+      IPV4_NETWORK="${IPV4_CIDR%/*}"
+      IPV4_PREFIX="${IPV4_CIDR#*/}"
+      IPV4_HOST_BASE="${IPV4_NETWORK%.*}"
+      IPV4_ADDRESS="${MAILCOW_IPV4_ADDRESS:-${IPV4_HOST_BASE}.1}"
+      # Mailcow expects IPV4_NETWORK without a trailing .0; the compose file
+      # appends ".0/24" when defining the bridge subnet. Using the host base
+      # avoids generating malformed values like 172.30.1.0.0/24.
+      sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_HOST_BASE}/" mailcow.conf
+      sed -i "s/^IPV4_NETWORK_PREFIX=.*/IPV4_NETWORK_PREFIX=${IPV4_PREFIX}/" mailcow.conf
+      sed -i "s/^IPV4_ADDRESS=.*/IPV4_ADDRESS=${IPV4_ADDRESS}/" mailcow.conf
+
+      docker compose down >/dev/null 2>&1 || true
+      if ! docker compose up -d; then
+        echo "Failed to start Mailcow; subnet ${IPV4_CIDR} may overlap with an existing network." >&2
+        echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
+        exit 1
+      fi
+      # Wait for the Mailcow API to become responsive
+      until curl -k -s https://localhost/api/v1/ping >/dev/null 2>&1; do
+        sleep 5
+      done
+
+      # Create demo domain and mailboxes
+      docker compose exec php-fpm-mailcow \
+        php /var/www/html/helper-scripts/mailcow-cli.php domain add mail.local 10 10 false >/dev/null 2>&1 || true
+      for user in demo1 demo2; do
+        docker compose exec php-fpm-mailcow \
+          php /var/www/html/helper-scripts/mailcow-cli.php user add "$user" mail.local demo123 1024 >/dev/null 2>&1 || true
+      done
+      echo "Mailcow started with demo1@mail.local and demo2@mail.local (password demo123)."
+    )
+    STARTED_MAILCOW=true
   fi
-  (
-    cd mailcow-dockerized
-    if [ ! -f mailcow.conf ]; then
-      export MAILCOW_HOSTNAME=mail.local
-      export MAILCOW_TZ=UTC
-      export DOCKER_COMPOSE_VERSION=native
-      # BusyBox cp warns on the non-portable -n flag used in mailcow's
-      # generate_config.sh and can terminate this script due to set -e.
-      # Replace it with the POSIX-compliant --update=none option before
-      # running the config generator.
-      sed -i 's/cp -n/cp --update=none/' generate_config.sh
-      yes "" | ./generate_config.sh >/dev/null
-    fi
-
-    # Choose a non-conflicting subnet for Mailcow's bridge network. The
-    # network may be supplied as a CIDR (e.g. 192.168.10.0/24) via
-    # MAILCOW_IPV4_NETWORK, and a host address can be set with
-    # MAILCOW_IPV4_ADDRESS. Defaults avoid clashing with common Docker
-    # networks.
-    IPV4_CIDR="${MAILCOW_IPV4_NETWORK:-172.30.1.0/24}"
-    IPV4_NETWORK="${IPV4_CIDR%/*}"
-    IPV4_PREFIX="${IPV4_CIDR#*/}"
-    IPV4_HOST_BASE="${IPV4_NETWORK%.*}"
-    IPV4_ADDRESS="${MAILCOW_IPV4_ADDRESS:-${IPV4_HOST_BASE}.1}"
-    sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_NETWORK}/" mailcow.conf
-    sed -i "s/^IPV4_NETWORK_PREFIX=.*/IPV4_NETWORK_PREFIX=${IPV4_PREFIX}/" mailcow.conf
-    sed -i "s/^IPV4_ADDRESS=.*/IPV4_ADDRESS=${IPV4_ADDRESS}/" mailcow.conf
-
-    docker compose down >/dev/null 2>&1 || true
-    docker compose up -d
-    add_user_script="./helper-scripts/addmailuser"
-    if [ ! -x "$add_user_script" ]; then
-      add_user_script="./addmailuser"
-    fi
-    if [ -x "$add_user_script" ]; then
-      "$add_user_script" demo1@mail.local demo123
-      "$add_user_script" demo2@mail.local demo123
-    else
-      echo "Could not find addmailuser helper script" >&2
-    fi
-  )
   export SMTP_HOST=localhost
   export SMTP_PORT=587
   export SMTP_USER=demo1@mail.local

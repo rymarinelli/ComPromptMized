@@ -100,6 +100,19 @@ def render_summary(text: str) -> None:
     )
 
 
+@st.cache_data
+def summarize(text: str, max_len: int) -> str | None:
+    """Return a cached summary for ``text`` up to ``max_len`` tokens."""
+
+    summarizer = get_summarizer()
+    if summarizer is None:
+        return None
+
+    return summarizer(text, max_length=max_len, min_length=20, do_sample=False)[0][
+        "summary_text"
+    ]
+
+
 def _extract_recipients(text: str) -> set[str]:
     """Return all email addresses targeted by SEND EMAIL directives."""
 
@@ -190,15 +203,10 @@ def main() -> None:
     with col1:
         st.subheader("Original Email")
         render_email(email)
-
-    summarizer = get_summarizer()
-    if summarizer is None:
-        return
-
     with st.spinner("Summarizing..."):
-        summary = summarizer(
-            email["Body"], max_length=max_len, min_length=20, do_sample=False
-        )[0]["summary_text"]
+        summary = summarize(email["Body"], max_len)
+    if summary is None:
+        return
 
     maybe_send_email(email["Body"], summary)
 
