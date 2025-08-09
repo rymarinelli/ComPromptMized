@@ -26,6 +26,9 @@ RAG_PROMPT = (
 # Lightweight summarization model
 SUMMARIZER_MODEL = "sshleifer/distilbart-cnn-6-6"
 
+# Lightweight question-answering model
+QA_MODEL = "distilbert-base-cased-distilled-squad"
+
 
 @st.cache_data
 def load_emails(path: Path):
@@ -53,6 +56,25 @@ def get_summarizer():
     except Exception as exc:  # pragma: no cover - protective fallback
         st.error(
             "Could not load the summarization model."
+            " Ensure `torch` and `transformers` are installed."
+        )
+        st.exception(exc)
+        return None
+
+
+@st.cache_resource
+def get_qa_pipeline():
+    """Load and cache the question-answering pipeline.
+
+    If the model or its dependencies are missing, display an error and
+    return ``None`` so the rest of the app can continue to run.
+    """
+
+    try:
+        return pipeline("question-answering", model=QA_MODEL)
+    except Exception as exc:  # pragma: no cover - protective fallback
+        st.error(
+            "Could not load the question-answering model."
             " Ensure `torch` and `transformers` are installed."
         )
         st.exception(exc)
@@ -114,9 +136,19 @@ def main() -> None:
         "Select email", range(len(emails)), format_func=lambda i: options[i]
     )
     max_len = st.sidebar.slider("Max summary length", 20, 120, 60, step=5)
+    st.sidebar.markdown(
+        """
+        <style>
+        div[data-testid='stSidebar'] button{background-color:#e63946;color:white;}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    inject = st.sidebar.button("Inject RAG prompt")
     email = emails[selection]
 
     summarizer = get_summarizer()
+    qa_pipeline = get_qa_pipeline()
     if summarizer is None:
         return
 
@@ -127,7 +159,6 @@ def main() -> None:
 
     with col2:
         st.subheader("Summary")
-        inject = st.button("Inject RAG prompt")
         body_to_sum = email["Body"]
         if inject:
             body_to_sum = f"{body_to_sum}\n\n{RAG_PROMPT}"
@@ -140,6 +171,18 @@ def main() -> None:
         if inject:
             summary = f"{RAG_PROMPT}\n{summary}"
         render_summary(summary)
+
+        st.subheader("Question & Answer")
+        question = st.text_input("Ask a question about this email")
+        if question:
+            if qa_pipeline is None:
+                st.warning("Question-answering model unavailable.")
+            else:
+                with st.spinner("Answering..."):
+                    answer = qa_pipeline(question=question, context=email["Body"])[
+                        "answer"
+                    ]
+                st.markdown(f"**Answer:** {answer}")
 
 
 if __name__ == "__main__":
