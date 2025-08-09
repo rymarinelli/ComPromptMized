@@ -113,10 +113,27 @@ if [ "$MAIL" = true ]; then
         echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
         exit 1
       fi
-      # Locate the addmailuser helper script even if it lacks execute permissions.
-      add_user_script=$(find helper-scripts -maxdepth 1 -type f -name 'addmailuser*' -print -quit 2>/dev/null || true)
+      # Locate the addmailuser helper script even if it lacks execute
+      # permissions. Prefer a direct path inside helper-scripts/, fall back to a
+      # repo-wide search and, if still missing, attempt to download it from
+      # upstream so demo inboxes can be created.
+      add_user_script=""
+      for path in helper-scripts/addmailuser helper-scripts/addmailuser.sh; do
+        if [ -f "$path" ]; then
+          add_user_script="$path"
+          break
+        fi
+      done
       if [ -z "$add_user_script" ]; then
         add_user_script=$(find . -type f -name 'addmailuser*' -print -quit 2>/dev/null || true)
+      fi
+      if [ -z "$add_user_script" ]; then
+        tmp_script=$(mktemp)
+        if curl -fsSL "https://raw.githubusercontent.com/mailcow/mailcow-dockerized/master/helper-scripts/addmailuser" -o "$tmp_script"; then
+          add_user_script="$tmp_script"
+        else
+          rm -f "$tmp_script"
+        fi
       fi
       if [ -n "$add_user_script" ]; then
         bash "$add_user_script" demo1@mail.local demo123
