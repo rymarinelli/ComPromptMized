@@ -33,9 +33,21 @@ def load_emails(path: Path):
 
 @st.cache_resource
 def get_summarizer():
-    """Load and cache the BART summarization pipeline."""
+    """Load and cache the BART summarization pipeline.
 
-    return pipeline("summarization", model="facebook/bart-large-cnn")
+    If the model or its dependencies are missing, display an error and
+    return ``None`` so the rest of the app can continue to run.
+    """
+
+    try:
+        return pipeline("summarization", model="facebook/bart-large-cnn")
+    except Exception as exc:  # pragma: no cover - protective fallback
+        st.error(
+            "Could not load the summarization model."
+            " Ensure `torch` and `transformers` are installed."
+        )
+        st.exception(exc)
+        return None
 
 
 def main() -> None:
@@ -61,6 +73,9 @@ def main() -> None:
         st.write(email["Body"])
 
     summarizer = get_summarizer()
+    if summarizer is None:
+        return
+
     with st.spinner("Summarizing..."):
         summary = summarizer(
             email["Body"], max_length=max_len, min_length=20, do_sample=False
