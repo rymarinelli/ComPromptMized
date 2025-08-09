@@ -61,7 +61,10 @@ if [ "$MAIL" = true ]; then
     IPV4_PREFIX="${IPV4_CIDR#*/}"
     IPV4_HOST_BASE="${IPV4_NETWORK%.*}"
     IPV4_ADDRESS="${MAILCOW_IPV4_ADDRESS:-${IPV4_HOST_BASE}.1}"
-    sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_NETWORK}/" mailcow.conf
+    # Mailcow expects IPV4_NETWORK without a trailing .0; the compose file
+    # appends ".0/24" when defining the bridge subnet. Using the host base
+    # avoids generating malformed values like 172.30.1.0.0/24.
+    sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_HOST_BASE}/" mailcow.conf
     sed -i "s/^IPV4_NETWORK_PREFIX=.*/IPV4_NETWORK_PREFIX=${IPV4_PREFIX}/" mailcow.conf
     sed -i "s/^IPV4_ADDRESS=.*/IPV4_ADDRESS=${IPV4_ADDRESS}/" mailcow.conf
 

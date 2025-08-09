@@ -102,7 +102,7 @@ Add `--mail` to the script to automatically clone and start a local Mailcow stac
 ./start_demo.sh --mail
 ```
 
-By default the script assigns Mailcow to the `172.30.1.0/24` subnet to avoid conflicts with existing Docker networks. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR range like `10.99.0.0/24` (and optionally `MAILCOW_IPV4_ADDRESS`) before running if your environment requires a different range.
+By default the script assigns Mailcow to the `172.30.1.0/24` subnet to avoid conflicts with existing Docker networks. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR range like `10.99.0.0/24` (and optionally `MAILCOW_IPV4_ADDRESS`) before running if your environment requires a different range. In `mailcow.conf`, `IPV4_NETWORK` should contain only the base network (e.g. `172.30.1` for the default) because the compose file appends `.0/24` automatically.
 
 Press `Ctrl+C` when you're finished with the demo; the script automatically shuts down the Mailcow stack and removes its network to prevent conflicts on the next run.
 
@@ -141,8 +141,8 @@ To show the worm being relayed through a full mail server, you can run a local [
    git clone https://github.com/mailcow/mailcow-dockerized
    cd mailcow-dockerized
    ./generate_config.sh  # answer prompts; use a hostname like mail.local
-   # Optionally edit mailcow.conf to adjust IPV4_NETWORK/IPV4_ADDRESS
-   # if the default 172.22.1.0/24 subnet overlaps with existing networks
+   # Optionally edit mailcow.conf to adjust IPV4_NETWORK (without trailing .0)
+   # and IPV4_ADDRESS if the default 172.22.1.0/24 subnet overlaps with existing networks
    docker compose up -d
    ```
 
