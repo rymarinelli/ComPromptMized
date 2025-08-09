@@ -80,12 +80,13 @@ def main() -> None:
         <style>
         .email-card, .summary-card {
             padding:1rem;
-            border:1px solid #ddd;
+            border:1px solid var(--secondary-background-color);
             border-radius:0.5rem;
-            background-color:#fff;
+            background-color:var(--background-color);
+            color:var(--text-color);
         }
         .summary-card {
-            background-color:#e8f4ff;
+            background-color:var(--secondary-background-color);
         }
         </style>
         """,
