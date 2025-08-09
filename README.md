@@ -88,6 +88,16 @@ One sample message contains a `SEND EMAIL TO` instruction; the app will attempt 
 It's ideal for demonstrating open-source LLM workflows at cybersecurity conventions.
 Configure `SMTP_HOST`, `SMTP_PORT`, and `SMTP_FROM` to point the app at a specific mail server; by default it uses `localhost:25` and `demo@example.com`. Optional `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_STARTTLS` variables enable authenticated relays such as Mailcow.
 
+### Quick start
+
+Run the demo with a single script that installs uv, syncs dependencies, and launches Streamlit:
+
+```bash
+./start_demo.sh
+```
+
+### Manual setup
+
 1. Install uv if needed:
 
 ```bash
