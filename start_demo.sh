@@ -51,6 +51,7 @@ if [ "$MAIL" = true ]; then
     if [ ! -d mailcow-dockerized ]; then
       git clone https://github.com/mailcow/mailcow-dockerized
     fi
+    git -C mailcow-dockerized submodule update --init --recursive >/dev/null 2>&1 || true
     (
       cd mailcow-dockerized
       if [ ! -f mailcow.conf ]; then
@@ -113,7 +114,16 @@ if [ "$MAIL" = true ]; then
         exit 1
       fi
       # Locate the addmailuser helper script even if it lacks execute permissions.
-      add_user_script=$(find . -name 'addmailuser*' -type f -print 2>/dev/null | head -n1 || true)
+      add_user_script=""
+      for candidate in helper-scripts/addmailuser helper-scripts/addmailuser.sh addmailuser; do
+        if [ -f "$candidate" ]; then
+          add_user_script="$candidate"
+          break
+        fi
+      done
+      if [ -z "$add_user_script" ]; then
+        add_user_script=$(find . -name 'addmailuser*' -type f 2>/dev/null | head -n1 || true)
+      fi
       if [ -n "$add_user_script" ]; then
         bash "$add_user_script" demo1@mail.local demo123
         bash "$add_user_script" demo2@mail.local demo123
