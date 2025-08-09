@@ -74,9 +74,13 @@ if [ "$MAIL" = true ]; then
 
       choose_subnet() {
         if [ -n "${MAILCOW_IPV4_NETWORK:-}" ]; then
-          local cidr="$MAILCOW_IPV4_NETWORK"
-          [[ "$cidr" != */* ]] && cidr="${cidr}/24"
-          echo "$cidr"
+          local net="$MAILCOW_IPV4_NETWORK"
+          if [[ "$net" == */* ]]; then
+            echo "$net"
+          else
+            net="${net%.0}"
+            echo "${net}.0/24"
+          fi
           return 0
         fi
         for i in $(seq 0 255); do

@@ -102,7 +102,7 @@ Add `--mail` to the script to automatically clone Mailcow (initializing its help
 ./start_demo.sh --mail
 ```
 
-By default the script probes for a free `/24` within the `172.30.0.0/16` range by temporarily creating and removing Docker networks, avoiding clashes with both Docker and host subnets. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR (e.g. `10.99.0.0/24`) or a base network (e.g. `10.99.0`). In `mailcow.conf`, `IPV4_NETWORK` should contain only the base network (no trailing `.0`) because the compose file appends `.0/24` automatically. If the script still cannot find a free subnet, specify a different range and rerun it.
+By default the script probes for a free `/24` within the `172.30.0.0/16` range by temporarily creating and removing Docker networks, avoiding clashes with both Docker and host subnets. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR (e.g. `10.99.0.0/24`) or a base network with or without a trailing `.0` (e.g. `10.99.0` or `10.99.0.0`). The script normalizes this and writes only the base network to `mailcow.conf` (no trailing `.0`) because the compose file appends `.0/24` automatically. If the script still cannot find a free subnet, specify a different range and rerun it.
 
 If a network named `mailcowdockerized_mailcow-network` is already present, the script assumes Mailcow is running and skips the automatic setup.
 
