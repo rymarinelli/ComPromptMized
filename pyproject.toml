@@ -1,0 +1,11 @@
+[project]
+name = "email-summarizer"
+version = "0.1.0"
+description = "Streamlit demo that summarizes emails with an open-source BART model"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit",
+    "transformers",
+    "torch",
+]

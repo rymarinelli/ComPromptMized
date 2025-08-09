@@ -80,6 +80,29 @@ You can download the model checkpoints from the [LLaVA repository](https://githu
 Save the weights in the "ComPromptMized/FlowSteering/llava/llava_weights" directory. In our experiments, we utilize the LLaVA-7B weights.
 
 
+## Streamlit email summarizer demo
+
+This repository also includes a simple Streamlit app that summarizes emails using an open-source BART model. The app's dependencies are managed with [uv](https://github.com/astral-sh/uv).
+
+1. Install uv if needed:
+
+```bash
+pip install uv
+```
+
+2. Create an environment and install dependencies:
+
+```bash
+uv venv
+uv sync
+```
+
+3. Launch the demo:
+
+```bash
+uv run streamlit run email_summarizer_app.py
+```
+
 # Running the code
 
 The next two code files were transformed into a Jupyter format to improve readability and simplify testing and experimentation. Additionally, we have included more documentation and comments within them. In this section, we will cover some aspects of running these files.
