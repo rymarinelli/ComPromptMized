@@ -117,7 +117,19 @@ if [ "$MAIL" = true ]; then
         echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
         exit 1
       fi
-      echo "Mailcow started. Create demo1@mail.local and demo2@mail.local with password demo123 via the Web UI or API."
+      # Wait for the Mailcow API to become responsive
+      until curl -k -s https://localhost/api/v1/ping >/dev/null 2>&1; do
+        sleep 5
+      done
+
+      # Create demo domain and mailboxes
+      docker compose exec php-fpm-mailcow \
+        php /var/www/html/helper-scripts/mailcow-cli.php domain add mail.local 10 10 false >/dev/null 2>&1 || true
+      for user in demo1 demo2; do
+        docker compose exec php-fpm-mailcow \
+          php /var/www/html/helper-scripts/mailcow-cli.php user add "$user" mail.local demo123 1024 >/dev/null 2>&1 || true
+      done
+      echo "Mailcow started with demo1@mail.local and demo2@mail.local (password demo123)."
     )
     STARTED_MAILCOW=true
   fi
