@@ -62,38 +62,35 @@ if [ "$MAIL" = true ]; then
     fi
 
     # Choose a non-conflicting subnet for Mailcow's bridge network. The network
-    # may be supplied via MAILCOW_IPV4_NETWORK as either a CIDR
-    # (e.g. 192.168.10.0/24) or just the network base (e.g. 192.168.10). When no
-    # network is provided, pick the first free /24 within 172.30.0.0/16.
-    if [ -n "${MAILCOW_IPV4_NETWORK:-}" ]; then
-      IPV4_CIDR="$MAILCOW_IPV4_NETWORK"
-      [[ "$IPV4_CIDR" != */* ]] && IPV4_CIDR="${IPV4_CIDR}/24"
-    else
-      IPV4_CIDR=$($PYTHON <<'PY'
-import ipaddress, json, subprocess
-subnets=set()
-try:
-    ids=subprocess.check_output(["docker","network","ls","-q"]).decode().split()
-    if ids:
-        info=json.loads(subprocess.check_output(["docker","network","inspect"]+ids))
-        for n in info:
-            cfg=n.get("IPAM",{}).get("Config") or []
-            for c in cfg:
-                s=c.get("Subnet")
-                if s:
-                    subnets.add(ipaddress.ip_network(s))
-except Exception:
-    pass
-base=ipaddress.ip_network("172.30.0.0/16")
-for net in base.subnets(new_prefix=24):
-    if all(not net.overlaps(s) for s in subnets):
-        print(net)
-        break
-else:
-    print("172.30.1.0/24")
-PY
-)
-    fi
+    # may be supplied via MAILCOW_IPV4_NETWORK as either a CIDR (e.g.
+    # 192.168.10.0/24) or just the network base (e.g. 192.168.10). When no
+    # network is provided, probe for the first free /24 within 172.30.0.0/16 by
+    # attempting to create a temporary Docker network.
+
+    choose_subnet() {
+      if [ -n "${MAILCOW_IPV4_NETWORK:-}" ]; then
+        local cidr="$MAILCOW_IPV4_NETWORK"
+        [[ "$cidr" != */* ]] && cidr="${cidr}/24"
+        echo "$cidr"
+        return 0
+      fi
+      for i in $(seq 0 255); do
+        local cidr="172.30.${i}.0/24"
+        if docker network create mailcow-probe --subnet "$cidr" >/dev/null 2>&1; then
+          docker network rm mailcow-probe >/dev/null 2>&1 || true
+          echo "$cidr"
+          return 0
+        fi
+      done
+      return 1
+    }
+
+    IPV4_CIDR=$(choose_subnet) || {
+      echo "Could not find a free subnet in 172.30.0.0/16." >&2
+      echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
+      exit 1
+    }
+
     IPV4_NETWORK="${IPV4_CIDR%/*}"
     IPV4_PREFIX="${IPV4_CIDR#*/}"
     IPV4_HOST_BASE="${IPV4_NETWORK%.*}"
@@ -107,7 +104,7 @@ PY
 
     docker compose down >/dev/null 2>&1 || true
     if ! docker compose up -d; then
-      echo "Failed to start Mailcow; subnet ${IPV4_CIDR} may overlap with an existing network."
+      echo "Failed to start Mailcow; subnet ${IPV4_CIDR} may overlap with an existing network." >&2
       echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
       exit 1
     fi

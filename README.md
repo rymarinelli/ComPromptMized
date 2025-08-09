@@ -102,7 +102,7 @@ Add `--mail` to the script to automatically clone and start a local Mailcow stac
 ./start_demo.sh --mail
 ```
 
-By default the script scans for a free `/24` within the `172.30.0.0/16` range to avoid clashes with existing Docker networks. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR (e.g. `10.99.0.0/24`) or a base network (e.g. `10.99.0`). In `mailcow.conf`, `IPV4_NETWORK` should contain only the base network (no trailing `.0`) because the compose file appends `.0/24` automatically. If `docker compose` still reports a subnet overlap, choose a different range and rerun the script.
+By default the script probes for a free `/24` within the `172.30.0.0/16` range by temporarily creating and removing Docker networks, avoiding clashes with both Docker and host subnets. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR (e.g. `10.99.0.0/24`) or a base network (e.g. `10.99.0`). In `mailcow.conf`, `IPV4_NETWORK` should contain only the base network (no trailing `.0`) because the compose file appends `.0/24` automatically. If the script still cannot find a free subnet, specify a different range and rerun it.
 
 Press `Ctrl+C` when you're finished with the demo; the script automatically shuts down the Mailcow stack and removes its network to prevent conflicts on the next run.
 
