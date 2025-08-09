@@ -96,7 +96,7 @@ Run the demo with a single script that installs uv, syncs dependencies, and laun
 ./start_demo.sh
 ```
 
-Add `--mail` to the script to automatically clone and start a local Mailcow stack, seed it with two demo inboxes (`demo1@mail.local` and `demo2@mail.local`, password `demo123`), and configure the app to relay through it. This requires Docker and docker compose:
+Add `--mail` to the script to automatically clone and start a local Mailcow stack, seed it with two demo inboxes (`demo1@mail.local` and `demo2@mail.local`, password `demo123`), and configure the app to relay through it. The script supplies default answers (`mail.local` FQDN, `UTC` timezone) to Mailcow's setup so it runs without prompts. Set `MAILCOW_HOSTNAME` or `MAILCOW_TZ` before running if you need different values. This requires Docker and docker compose:
 
 ```bash
 ./start_demo.sh --mail
@@ -136,7 +136,7 @@ To show the worm being relayed through a full mail server, you can run a local [
    ```bash
    git clone https://github.com/mailcow/mailcow-dockerized
    cd mailcow-dockerized
-   ./generate_config.sh
+   ./generate_config.sh  # answer prompts; use a hostname like mail.local
    docker compose up -d
    ```
 

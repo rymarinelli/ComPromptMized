@@ -29,7 +29,13 @@ uv sync
 if [ "$MAIL" = true ]; then
   if [ ! -d mailcow-dockerized ]; then
     git clone https://github.com/mailcow/mailcow-dockerized
-    (cd mailcow-dockerized && ./generate_config.sh)
+    (
+      cd mailcow-dockerized
+      export MAILCOW_HOSTNAME=mail.local
+      export MAILCOW_TZ=UTC
+      export DOCKER_COMPOSE_VERSION=native
+      yes "" | ./generate_config.sh >/dev/null
+    )
   fi
   (
     cd mailcow-dockerized && \
