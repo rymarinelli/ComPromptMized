@@ -29,19 +29,26 @@ uv sync
 if [ "$MAIL" = true ]; then
   if [ ! -d mailcow-dockerized ]; then
     git clone https://github.com/mailcow/mailcow-dockerized
-    (
-      cd mailcow-dockerized
+  fi
+  (
+    cd mailcow-dockerized
+    if [ ! -f mailcow.conf ]; then
       export MAILCOW_HOSTNAME=mail.local
       export MAILCOW_TZ=UTC
       export DOCKER_COMPOSE_VERSION=native
       yes "" | ./generate_config.sh >/dev/null
-    )
-  fi
-  (
-    cd mailcow-dockerized && \
-    docker compose up -d && \
-    ./helper-scripts/addmailuser demo1@mail.local demo123 && \
-    ./helper-scripts/addmailuser demo2@mail.local demo123
+    fi
+    docker compose up -d
+    add_user_script="./helper-scripts/addmailuser"
+    if [ ! -x "$add_user_script" ]; then
+      add_user_script="./addmailuser"
+    fi
+    if [ -x "$add_user_script" ]; then
+      "$add_user_script" demo1@mail.local demo123
+      "$add_user_script" demo2@mail.local demo123
+    else
+      echo "Could not find addmailuser helper script" >&2
+    fi
   )
   export SMTP_HOST=localhost
   export SMTP_PORT=587
