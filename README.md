@@ -82,11 +82,28 @@ Save the weights in the "ComPromptMized/FlowSteering/llava/llava_weights" direct
 
 ## Streamlit email summarizer demo
 
+
 This repository also includes a simple Streamlit app that summarizes emails using a lightweight DistilBART model (`sshleifer/distilbart-cnn-6-6`). The app's dependencies are managed with [uv](https://github.com/astral-sh/uv).
 Use the sidebar to pick an email and adjust the maximum summary length with a slider.
 Ask questions about the selected email and the app will answer using a tiny question–answering model.
 Press the red **Inject RAG prompt** button to append a sample self-replicating prompt so it shows up in the summary.
 It's ideal for demonstrating open-source LLM workflows at cybersecurity conventions.
+
+For conference booths or security workshops, this repository includes a self-contained Streamlit app that summarizes emails using a lightweight DistilBART model (`sshleifer/distilbart-cnn-6-6`). The app's dependencies are managed with [uv](https://github.com/astral-sh/uv).
+Use the sidebar to pick an email and adjust the maximum summary length with a slider.
+One sample message contains a `SEND EMAIL TO` instruction; the app will attempt to send the generated summary to the address using a local SMTP server. This illustrates how prompt-injected emails could trigger outgoing messages.
+It's ideal for demonstrating open-source LLM workflows at cybersecurity conventions.
+Configure `SMTP_HOST`, `SMTP_PORT`, and `SMTP_FROM` to point the app at a specific mail server; by default it uses `localhost:25` and `demo@example.com`. Optional `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_STARTTLS` variables enable authenticated relays such as Mailcow.
+
+### Quick start
+
+Run the demo with a single script that installs uv, syncs dependencies, and launches Streamlit:
+
+```bash
+./start_demo.sh
+```
+
+
 
 1. Install uv if needed:
 
@@ -110,6 +127,35 @@ uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.p
 Then open [http://localhost:8501](http://localhost:8501) in your browser to view the app.
 
 If the command attempts to open a browser and you see a `gio: Operation not supported` message, simply copy the URL above into your browser manually.
+
+
+### Optional: relay through Mailcow
+
+To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it.
+
+1. Start Mailcow:
+
+   ```bash
+   git clone https://github.com/mailcow/mailcow-dockerized
+   cd mailcow-dockerized
+   ./generate_config.sh
+   docker compose up -d
+   ```
+
+2. Configure the app to use Mailcow's SMTP service:
+
+   ```bash
+   export SMTP_HOST=localhost
+   export SMTP_PORT=587
+   export SMTP_USER="demo@example.com"      # mailbox created in Mailcow
+   export SMTP_PASSWORD="change-me"
+   export SMTP_FROM="demo@example.com"
+   export SMTP_STARTTLS=true
+   uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.port 8501
+   ```
+
+The outbound summary email will appear in the Mailcow dashboard, demonstrating that the worm's directive was relayed.
+
 
 Streamlit collects anonymous usage statistics by default. To opt out, create `~/.streamlit/config.toml` with:
 
