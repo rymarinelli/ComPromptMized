@@ -129,9 +129,15 @@ if [ "$MAIL" = true ]; then
       fi
       if [ -z "$add_user_script" ]; then
         tmp_script=$(mktemp)
-        if curl -fsSL "https://raw.githubusercontent.com/mailcow/mailcow-dockerized/master/helper-scripts/addmailuser" -o "$tmp_script"; then
-          add_user_script="$tmp_script"
-        else
+        branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo master)
+        for name in addmailuser addmailuser.sh; do
+          url="https://raw.githubusercontent.com/mailcow/mailcow-dockerized/${branch}/helper-scripts/${name}"
+          if curl -fsSL "$url" -o "$tmp_script"; then
+            add_user_script="$tmp_script"
+            break
+          fi
+        done
+        if [ -z "$add_user_script" ]; then
           rm -f "$tmp_script"
         fi
       fi
