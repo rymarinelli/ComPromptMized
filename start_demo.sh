@@ -15,6 +15,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+cleanup() {
+  if [ "$MAIL" = true ] && [ -d mailcow-dockerized ]; then
+    (cd mailcow-dockerized && docker compose down >/dev/null 2>&1 || true)
+  fi
+}
+trap cleanup EXIT
+
 if ! command -v uv >/dev/null 2>&1; then
   echo "uv not found; installing with pip"
   python -m pip install --user uv
@@ -52,6 +59,7 @@ if [ "$MAIL" = true ]; then
     sed -i "s/^IPV4_NETWORK=.*/IPV4_NETWORK=${IPV4_NETWORK//\//\\/}/" mailcow.conf
     sed -i "s/^IPV4_ADDRESS=.*/IPV4_ADDRESS=${IPV4_ADDRESS}/" mailcow.conf
 
+    docker compose down >/dev/null 2>&1 || true
     docker compose up -d
     add_user_script="./helper-scripts/addmailuser"
     if [ ! -x "$add_user_script" ]; then
@@ -72,5 +80,5 @@ if [ "$MAIL" = true ]; then
   export SMTP_STARTTLS=true
 fi
 
-exec uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.port 8501
+uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.port 8501
 
