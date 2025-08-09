@@ -51,12 +51,39 @@ if [ "$MAIL" = true ]; then
       yes "" | ./generate_config.sh >/dev/null
     fi
 
-    # Choose a non-conflicting subnet for Mailcow's bridge network. The
-    # network may be supplied as a CIDR (e.g. 192.168.10.0/24) via
-    # MAILCOW_IPV4_NETWORK, and a host address can be set with
-    # MAILCOW_IPV4_ADDRESS. Defaults avoid clashing with common Docker
-    # networks.
-    IPV4_CIDR="${MAILCOW_IPV4_NETWORK:-172.30.1.0/24}"
+    # Choose a non-conflicting subnet for Mailcow's bridge network. The network
+    # may be supplied via MAILCOW_IPV4_NETWORK as either a CIDR
+    # (e.g. 192.168.10.0/24) or just the network base (e.g. 192.168.10). When no
+    # network is provided, pick the first free /24 within 172.30.0.0/16.
+    if [ -n "${MAILCOW_IPV4_NETWORK:-}" ]; then
+      IPV4_CIDR="$MAILCOW_IPV4_NETWORK"
+      [[ "$IPV4_CIDR" != */* ]] && IPV4_CIDR="${IPV4_CIDR}/24"
+    else
+      IPV4_CIDR=$(python <<'PY'
+import ipaddress, json, subprocess
+subnets=set()
+try:
+    ids=subprocess.check_output(["docker","network","ls","-q"]).decode().split()
+    if ids:
+        info=json.loads(subprocess.check_output(["docker","network","inspect"]+ids))
+        for n in info:
+            cfg=n.get("IPAM",{}).get("Config") or []
+            for c in cfg:
+                s=c.get("Subnet")
+                if s:
+                    subnets.add(ipaddress.ip_network(s))
+except Exception:
+    pass
+base=ipaddress.ip_network("172.30.0.0/16")
+for net in base.subnets(new_prefix=24):
+    if all(not net.overlaps(s) for s in subnets):
+        print(net)
+        break
+else:
+    print("172.30.1.0/24")
+PY
+)
+    fi
     IPV4_NETWORK="${IPV4_CIDR%/*}"
     IPV4_PREFIX="${IPV4_CIDR#*/}"
     IPV4_HOST_BASE="${IPV4_NETWORK%.*}"
@@ -69,7 +96,11 @@ if [ "$MAIL" = true ]; then
     sed -i "s/^IPV4_ADDRESS=.*/IPV4_ADDRESS=${IPV4_ADDRESS}/" mailcow.conf
 
     docker compose down >/dev/null 2>&1 || true
-    docker compose up -d
+    if ! docker compose up -d; then
+      echo "Failed to start Mailcow; subnet ${IPV4_CIDR} may overlap with an existing network."
+      echo "Specify MAILCOW_IPV4_NETWORK with a free CIDR range and try again." >&2
+      exit 1
+    fi
     add_user_script="./helper-scripts/addmailuser"
     if [ ! -x "$add_user_script" ]; then
       add_user_script="./addmailuser"
