@@ -40,8 +40,8 @@ if [ "$MAIL" = true ]; then
   (
     cd mailcow-dockerized && \
     docker compose up -d && \
-    ./helper-scripts/add-account -p demo123 demo1@mail.local && \
-    ./helper-scripts/add-account -p demo123 demo2@mail.local
+    ./helper-scripts/addmailuser demo1@mail.local demo123 && \
+    ./helper-scripts/addmailuser demo2@mail.local demo123
   )
   export SMTP_HOST=localhost
   export SMTP_PORT=587
