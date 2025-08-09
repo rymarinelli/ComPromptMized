@@ -114,15 +114,9 @@ if [ "$MAIL" = true ]; then
         exit 1
       fi
       # Locate the addmailuser helper script even if it lacks execute permissions.
-      add_user_script=""
-      for candidate in helper-scripts/addmailuser helper-scripts/addmailuser.sh addmailuser; do
-        if [ -f "$candidate" ]; then
-          add_user_script="$candidate"
-          break
-        fi
-      done
+      add_user_script=$(find helper-scripts -maxdepth 1 -type f -name 'addmailuser*' -print -quit 2>/dev/null || true)
       if [ -z "$add_user_script" ]; then
-        add_user_script=$(find . -type f \( -name addmailuser -o -name addmailuser.sh \) -print -quit 2>/dev/null || true)
+        add_user_script=$(find . -type f -name 'addmailuser*' -print -quit 2>/dev/null || true)
       fi
       if [ -n "$add_user_script" ]; then
         bash "$add_user_script" demo1@mail.local demo123
