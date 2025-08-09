@@ -80,6 +80,94 @@ You can download the model checkpoints from the [LLaVA repository](https://githu
 Save the weights in the "ComPromptMized/FlowSteering/llava/llava_weights" directory. In our experiments, we utilize the LLaVA-7B weights.
 
 
+## Streamlit email summarizer demo
+
+For conference booths or security workshops, this repository includes a self-contained Streamlit app that summarizes emails using a lightweight DistilBART model (`sshleifer/distilbart-cnn-6-6`). The app's dependencies are managed with [uv](https://github.com/astral-sh/uv).
+Use the sidebar to pick an email and adjust the maximum summary length with a slider.
+One sample message contains a `SEND EMAIL TO` instruction; the app will attempt to send the generated summary to the address using a local SMTP server. If the model repeats the directive in its summary, the app flags this replication and forwards the message on, illustrating how prompt-injected emails could trigger outgoing messages.
+It's ideal for demonstrating open-source LLM workflows at cybersecurity conventions.
+Configure `SMTP_HOST`, `SMTP_PORT`, and `SMTP_FROM` to point the app at a specific mail server; by default it uses `localhost:25` and `demo@example.com`. Optional `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_STARTTLS` variables enable authenticated relays such as Mailcow.
+
+### Quick start
+
+Run the demo with a single script that installs uv, syncs dependencies, and launches Streamlit:
+
+```bash
+./start_demo.sh
+```
+
+Add `--mail` to the script to automatically clone and start a local Mailcow stack, seed it with two demo inboxes (`demo1@mail.local` and `demo2@mail.local`, password `demo123`), and configure the app to relay through it. This requires Docker and docker compose:
+
+```bash
+./start_demo.sh --mail
+```
+
+### Manual setup
+
+1. Install uv if needed:
+
+```bash
+pip install uv
+```
+
+2. Create an environment and install dependencies:
+
+```bash
+uv venv
+uv sync
+```
+
+3. Launch the demo:
+
+```bash
+uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.port 8501
+```
+
+Then open [http://localhost:8501](http://localhost:8501) in your browser to view the app.
+
+If the command attempts to open a browser and you see a `gio: Operation not supported` message, simply copy the URL above into your browser manually.
+
+### Optional: relay through Mailcow
+
+To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it. The `start_demo.sh --mail` flag automates the setup below (including creation of `demo1@mail.local` and `demo2@mail.local` accounts with password `demo123`), but the steps are provided for reference if you prefer manual control.
+
+1. Start Mailcow:
+
+   ```bash
+   git clone https://github.com/mailcow/mailcow-dockerized
+   cd mailcow-dockerized
+   ./generate_config.sh
+   docker compose up -d
+   ```
+
+2. Create two mailboxes to watch the worm spread:
+
+   - Visit `https://mailcow.localhost` (or the hostname you set in `mailcow.conf`).
+   - Sign in to the admin UI (default credentials `admin` / `moohoo`).
+   - Add `demo1@mail.local` and `demo2@mail.local` with password `demo123`.
+   - You can check these mailboxes later via SOGo or Roundcube at `https://mailcow.localhost/SOGo/`.
+
+3. Configure the app to use Mailcow's SMTP service:
+
+   ```bash
+   export SMTP_HOST=localhost
+   export SMTP_PORT=587
+   export SMTP_USER="demo1@mail.local"
+   export SMTP_PASSWORD="demo123"
+   export SMTP_FROM="demo1@mail.local"
+   export SMTP_STARTTLS=true
+   uv run streamlit run email_summarizer_app.py --server.address 0.0.0.0 --server.port 8501
+   ```
+
+The initial directive in the sample dataset emails `demo1@mail.local`. Because the summary also contains a new directive, the app forwards it on to `demo2@mail.local`, illustrating how a prompt-worm can spread between accounts.
+
+Streamlit collects anonymous usage statistics by default. To opt out, create `~/.streamlit/config.toml` with:
+
+```
+[browser]
+gatherUsageStats = false
+```
+
 # Running the code
 
 The next two code files were transformed into a Jupyter format to improve readability and simplify testing and experimentation. Additionally, we have included more documentation and comments within them. In this section, we will cover some aspects of running these files.
