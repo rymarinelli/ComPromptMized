@@ -15,7 +15,11 @@ import smtplib
 from email.message import EmailMessage
 
 import streamlit as st
-from transformers import pipeline
+
+try:  # pragma: no cover - optional dependency
+    from transformers import pipeline
+except Exception:  # pragma: no cover - missing transformers
+    pipeline = None  # type: ignore
 
 
 # Path to the bundled CSV with example emails
@@ -59,13 +63,15 @@ def get_summarizer():
     If the model or its dependencies are missing, display an error and
     return ``None`` so the rest of the app can continue to run.
     """
+    if pipeline is None:
+        st.error("`transformers` is required for summarization. Please install it.")
+        return None
 
     try:
         return pipeline("summarization", model=SUMMARIZER_MODEL)
     except Exception as exc:  # pragma: no cover - protective fallback
         st.error(
-            "Could not load the summarization model."
-            " Ensure `torch` and `transformers` are installed."
+            "Could not load the summarization model. Ensure `torch` and `transformers` are installed."
         )
         st.exception(exc)
         return None
