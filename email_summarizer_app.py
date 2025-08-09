@@ -1,5 +1,5 @@
-"""Streamlit demo that summarizes emails from a CSV file using an open-source
-BART model.
+"""Streamlit demo that summarizes emails from a CSV file using a lightweight
+DistilBART model.
 
 The demo loads emails from ``RAG-based Worm/RAG Emails/Emails.csv`` and lets the
 user pick one to summarize. A slider controls the maximum length of the
@@ -17,6 +17,9 @@ RagEmailsCsv_dir = (
     Path(__file__).parent / "RAG-based Worm" / "RAG Emails" / "Emails.csv"
 )
 
+# Lightweight summarization model
+SUMMARIZER_MODEL = "sshleifer/distilbart-cnn-6-6"
+
 
 @st.cache_data
 def load_emails(path: Path):
@@ -33,14 +36,14 @@ def load_emails(path: Path):
 
 @st.cache_resource
 def get_summarizer():
-    """Load and cache the BART summarization pipeline.
+    """Load and cache the summarization pipeline.
 
     If the model or its dependencies are missing, display an error and
     return ``None`` so the rest of the app can continue to run.
     """
 
     try:
-        return pipeline("summarization", model="facebook/bart-large-cnn")
+        return pipeline("summarization", model=SUMMARIZER_MODEL)
     except Exception as exc:  # pragma: no cover - protective fallback
         st.error(
             "Could not load the summarization model."

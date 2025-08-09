@@ -82,7 +82,7 @@ Save the weights in the "ComPromptMized/FlowSteering/llava/llava_weights" direct
 
 ## Streamlit email summarizer demo
 
-This repository also includes a simple Streamlit app that summarizes emails using an open-source BART model. The app's dependencies are managed with [uv](https://github.com/astral-sh/uv).
+This repository also includes a simple Streamlit app that summarizes emails using a lightweight DistilBART model (`sshleifer/distilbart-cnn-6-6`). The app's dependencies are managed with [uv](https://github.com/astral-sh/uv).
 Use the sidebar to pick an email and adjust the maximum summary length with a slider.
 
 1. Install uv if needed:
