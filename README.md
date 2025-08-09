@@ -84,6 +84,7 @@ Save the weights in the "ComPromptMized/FlowSteering/llava/llava_weights" direct
 
 This repository also includes a simple Streamlit app that summarizes emails using a lightweight DistilBART model (`sshleifer/distilbart-cnn-6-6`). The app's dependencies are managed with [uv](https://github.com/astral-sh/uv).
 Use the sidebar to pick an email and adjust the maximum summary length with a slider.
+Press **Inject RAG prompt** to append a sample self-replicating prompt so it shows up in the summary.
 It's ideal for demonstrating open-source LLM workflows at cybersecurity conventions.
 
 1. Install uv if needed:
