@@ -96,15 +96,17 @@ Run the demo with a single script that installs uv, syncs dependencies, and laun
 ./start_demo.sh
 ```
 
-Add `--mail` to the script to automatically clone and start a local Mailcow stack, seed it with two demo inboxes (`demo1@mail.local` and `demo2@mail.local`, password `demo123`), and configure the app to relay through it. The script supplies default answers (`mail.local` FQDN, `UTC` timezone) to Mailcow's setup so it runs without prompts. Set `MAILCOW_HOSTNAME` or `MAILCOW_TZ` before running if you need different values. This requires Docker and docker compose:
+Add `--mail` to the script to automatically clone Mailcow, start a local stack, and configure the app to relay through it. You'll need to create two demo inboxes (`demo1@mail.local` and `demo2@mail.local`, password `demo123`) yourself via the Mailcow Web UI or API. The script supplies default answers (`mail.local` FQDN, `UTC` timezone) to Mailcow's setup so it runs without prompts. Set `MAILCOW_HOSTNAME` or `MAILCOW_TZ` before running if you need different values. This requires Docker and docker compose:
 
 ```bash
 ./start_demo.sh --mail
 ```
 
-By default the script assigns Mailcow to the `172.30.1.0/24` subnet to avoid conflicts with existing Docker networks. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR range like `10.99.0.0/24` (and optionally `MAILCOW_IPV4_ADDRESS`) before running if your environment requires a different range.
+By default the script probes for a free `/24` within the `172.30.0.0/16` range by temporarily creating and removing Docker networks, avoiding clashes with both Docker and host subnets. Override this by setting `MAILCOW_IPV4_NETWORK` to a CIDR (e.g. `10.99.0.0/24`) or a base network with or without a trailing `.0` (e.g. `10.99.0` or `10.99.0.0`). The script normalizes this and writes only the base network to `mailcow.conf` (no trailing `.0`) because the compose file appends `.0/24` automatically. If the script still cannot find a free subnet, specify a different range and rerun it.
 
-Press `Ctrl+C` when you're finished with the demo; the script automatically shuts down the Mailcow stack and removes its network to prevent conflicts on the next run.
+If a network named `mailcowdockerized_mailcow-network` is already present, the script assumes Mailcow is running and skips the automatic setup.
+
+Press `Ctrl+C` when you're finished with the demo; if the script started Mailcow, it automatically shuts down the stack and removes its network. Existing Mailcow instances are left untouched.
 
 ### Manual setup
 
@@ -133,7 +135,7 @@ If the command attempts to open a browser and you see a `gio: Operation not supp
 
 ### Optional: relay through Mailcow
 
-To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it. The `start_demo.sh --mail` flag automates the setup below (including creation of `demo1@mail.local` and `demo2@mail.local` accounts with password `demo123`), but the steps are provided for reference if you prefer manual control.
+To show the worm being relayed through a full mail server, you can run a local [Mailcow](https://mailcow.email) instance and point the app at it. The `start_demo.sh --mail` flag automates the setup below and creates `demo1@mail.local` and `demo2@mail.local` (password `demo123`) for you.
 
 1. Start Mailcow:
 
@@ -141,17 +143,12 @@ To show the worm being relayed through a full mail server, you can run a local [
    git clone https://github.com/mailcow/mailcow-dockerized
    cd mailcow-dockerized
    ./generate_config.sh  # answer prompts; use a hostname like mail.local
-   # Optionally edit mailcow.conf to adjust IPV4_NETWORK/IPV4_ADDRESS
-   # if the default 172.22.1.0/24 subnet overlaps with existing networks
+   # Optionally edit mailcow.conf to adjust IPV4_NETWORK (without trailing .0)
+   # and IPV4_ADDRESS if the default 172.22.1.0/24 subnet overlaps with existing networks
    docker compose up -d
    ```
 
-2. Create two mailboxes to watch the worm spread:
-
-   - Visit `https://mailcow.localhost` (or the hostname you set in `mailcow.conf`).
-   - Sign in to the admin UI (default credentials `admin` / `moohoo`).
-   - Add `demo1@mail.local` and `demo2@mail.local` with password `demo123`.
-   - You can check these mailboxes later via SOGo or Roundcube at `https://mailcow.localhost/SOGo/`.
+2. The script automatically provisions `demo1@mail.local` and `demo2@mail.local` with password `demo123`. You can verify or manage them by visiting `https://mailcow.localhost` (default admin credentials `admin` / `moohoo`). Check these mailboxes later via SOGo or Roundcube at `https://mailcow.localhost/SOGo/`.
 
 3. Configure the app to use Mailcow's SMTP service:
 
