@@ -111,14 +111,43 @@ def load_vectorstore():
         st.sidebar.warning("LangChain not installed; RAG demo disabled.")
         return None
 
-    embeddings = HuggingFaceEmbeddings()
+    try:
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+    except ModuleNotFoundError as exc:
+        st.sidebar.error(
+            "`sentence_transformers` is required for embeddings. Install it to enable RAG."
+        )
+        st.sidebar.exception(exc)
+        return None
+    except Exception as exc:  # pragma: no cover - unexpected embedding failure
+        st.sidebar.error("Failed to load embedding model.")
+        st.sidebar.exception(exc)
+        return None
+
     try:
         return FAISS.load_local(
             str(VECTOR_STORE_DIR), embeddings, allow_dangerous_deserialization=True
         )
     except Exception:
         VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
-        return FAISS.from_texts([], embeddings)
+        try:
+            import faiss  # type: ignore
+            from langchain.docstore import InMemoryDocstore  # type: ignore
+
+            dimension = len(embeddings.embed_query(""))
+            index = faiss.IndexFlatL2(dimension)
+            return FAISS(
+                embedding_function=embeddings,
+                index=index,
+                docstore=InMemoryDocstore({}),
+                index_to_docstore_id={},
+            )
+        except Exception as exc:  # pragma: no cover - faiss init failure
+            st.sidebar.error("Failed to initialize empty vector store.")
+            st.sidebar.exception(exc)
+            return None
 
 
 def add_vulnerability_prompt(store) -> None:
