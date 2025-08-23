@@ -111,7 +111,21 @@ def load_vectorstore():
         st.sidebar.warning("LangChain not installed; RAG demo disabled.")
         return None
 
-    embeddings = HuggingFaceEmbeddings()
+    try:
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+    except ModuleNotFoundError as exc:
+        st.sidebar.error(
+            "`sentence_transformers` is required for embeddings. Install it to enable RAG."
+        )
+        st.sidebar.exception(exc)
+        return None
+    except Exception as exc:  # pragma: no cover - unexpected embedding failure
+        st.sidebar.error("Failed to load embedding model.")
+        st.sidebar.exception(exc)
+        return None
+
     try:
         return FAISS.load_local(
             str(VECTOR_STORE_DIR), embeddings, allow_dangerous_deserialization=True
