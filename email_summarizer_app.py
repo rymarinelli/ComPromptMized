@@ -114,20 +114,20 @@ def load_vectorstore():
     try:
         import sentence_transformers  # type: ignore  # noqa: F401
     except Exception as exc:
-        st.sidebar.error(
-            "`sentence_transformers` is required for embeddings. Install it to enable RAG."
+
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
-        st.sidebar.exception(exc)
-        return None
+    except ModuleNotFoundError as exc:
+
+
 
     try:
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
     except Exception as exc:  # pragma: no cover - embedding init failure
-        st.sidebar.error("Failed to load embedding model.")
-        st.sidebar.exception(exc)
-        return None
+
 
     try:
         return FAISS.load_local(
@@ -139,10 +139,14 @@ def load_vectorstore():
             import faiss  # type: ignore
             from langchain.docstore import InMemoryDocstore  # type: ignore
 
+
             sample = embeddings.embed_query("")
             if not sample:
                 raise ValueError("Empty embedding returned")
             dimension = len(sample)
+
+            dimension = len(embeddings.embed_query(""))
+
             index = faiss.IndexFlatL2(dimension)
             return FAISS(
                 embedding_function=embeddings,
