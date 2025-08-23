@@ -132,7 +132,22 @@ def load_vectorstore():
         )
     except Exception:
         VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
-        return FAISS.from_texts([], embeddings)
+        try:
+            import faiss  # type: ignore
+            from langchain.docstore import InMemoryDocstore  # type: ignore
+
+            dimension = len(embeddings.embed_query(""))
+            index = faiss.IndexFlatL2(dimension)
+            return FAISS(
+                embedding_function=embeddings,
+                index=index,
+                docstore=InMemoryDocstore({}),
+                index_to_docstore_id={},
+            )
+        except Exception as exc:  # pragma: no cover - faiss init failure
+            st.sidebar.error("Failed to initialize empty vector store.")
+            st.sidebar.exception(exc)
+            return None
 
 
 def add_vulnerability_prompt(store) -> None:
