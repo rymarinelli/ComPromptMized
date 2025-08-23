@@ -139,7 +139,10 @@ def load_vectorstore():
             import faiss  # type: ignore
             from langchain.docstore import InMemoryDocstore  # type: ignore
 
-            dimension = len(embeddings.embed_query(""))
+            sample = embeddings.embed_query("")
+            if not sample:
+                raise ValueError("Empty embedding returned")
+            dimension = len(sample)
             index = faiss.IndexFlatL2(dimension)
             return FAISS(
                 embedding_function=embeddings,
