@@ -112,16 +112,19 @@ def load_vectorstore():
         return None
 
     try:
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-    except ModuleNotFoundError as exc:
+        import sentence_transformers  # type: ignore  # noqa: F401
+    except Exception as exc:
         st.sidebar.error(
             "`sentence_transformers` is required for embeddings. Install it to enable RAG."
         )
         st.sidebar.exception(exc)
         return None
-    except Exception as exc:  # pragma: no cover - unexpected embedding failure
+
+    try:
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+    except Exception as exc:  # pragma: no cover - embedding init failure
         st.sidebar.error("Failed to load embedding model.")
         st.sidebar.exception(exc)
         return None
