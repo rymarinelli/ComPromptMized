@@ -16,10 +16,14 @@ from email.message import EmailMessage
 
 import streamlit as st
 try:  # pragma: no cover - optional dependency
-    from langchain.embeddings import HuggingFaceEmbeddings
-    from langchain.vectorstores import FAISS
-except ModuleNotFoundError:  # pragma: no cover - missing langchain
-    HuggingFaceEmbeddings = FAISS = None  # type: ignore
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+    from langchain_community.vectorstores import FAISS
+except ModuleNotFoundError:  # pragma: no cover - compatibility fallback
+    try:
+        from langchain.embeddings import HuggingFaceEmbeddings
+        from langchain.vectorstores import FAISS
+    except ModuleNotFoundError:  # pragma: no cover - missing langchain
+        HuggingFaceEmbeddings = FAISS = None  # type: ignore
 
 try:  # pragma: no cover - optional dependency
     from transformers import pipeline

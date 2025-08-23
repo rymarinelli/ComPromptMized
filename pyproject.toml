@@ -9,5 +9,6 @@ dependencies = [
     "transformers",
     "torch",
     "langchain",
+    "langchain-community",
     "faiss-cpu",
 ]
