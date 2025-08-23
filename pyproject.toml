@@ -8,4 +8,6 @@ dependencies = [
     "streamlit",
     "transformers",
     "torch",
+    "langchain",
+    "faiss-cpu",
 ]
