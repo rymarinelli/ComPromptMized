@@ -16,8 +16,8 @@ from email.message import EmailMessage
 
 import streamlit as st
 try:  # pragma: no cover - optional dependency
-    from langchain.embeddings import HuggingFaceEmbeddings
     from langchain.vectorstores import FAISS
+    from langchain_huggingface import HuggingFaceEmbeddings
 except ModuleNotFoundError:  # pragma: no cover - missing langchain
     HuggingFaceEmbeddings = FAISS = None  # type: ignore
 
@@ -106,58 +106,42 @@ def get_summarizer():
 
 @st.cache_resource
 def load_vectorstore():
-    """Load or initialize the FAISS vector store used for RAG."""
+    """Load or initialize the FAISS vector store used for RAG.
+
+    When the pre-built index is missing, we create an empty store so the
+    rest of the demo can continue to function.
+    """
     if FAISS is None or HuggingFaceEmbeddings is None:
         st.sidebar.warning("LangChain not installed; RAG demo disabled.")
         return None
-
-    try:
-        import sentence_transformers  # type: ignore  # noqa: F401
-    except Exception as exc:
-
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-    except ModuleNotFoundError as exc:
-
-
 
     try:
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
     except Exception as exc:  # pragma: no cover - embedding init failure
+        st.sidebar.error("Failed to load embeddings model.")
+        st.sidebar.exception(exc)
+        return None
 
-
+    # Try to load an existing FAISS index from disk
     try:
         return FAISS.load_local(
             str(VECTOR_STORE_DIR), embeddings, allow_dangerous_deserialization=True
         )
     except Exception:
         VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
-        try:
-            import faiss  # type: ignore
-            from langchain.docstore import InMemoryDocstore  # type: ignore
+        import faiss  # type: ignore
+        from langchain.docstore import InMemoryDocstore  # type: ignore
 
-
-            sample = embeddings.embed_query("")
-            if not sample:
-                raise ValueError("Empty embedding returned")
-            dimension = len(sample)
-
-            dimension = len(embeddings.embed_query(""))
-
-            index = faiss.IndexFlatL2(dimension)
-            return FAISS(
-                embedding_function=embeddings,
-                index=index,
-                docstore=InMemoryDocstore({}),
-                index_to_docstore_id={},
-            )
-        except Exception as exc:  # pragma: no cover - faiss init failure
-            st.sidebar.error("Failed to initialize empty vector store.")
-            st.sidebar.exception(exc)
-            return None
+        dim = len(embeddings.embed_query("placeholder"))
+        index = faiss.IndexFlatL2(dim)
+        return FAISS(
+            embedding_function=embeddings,
+            index=index,
+            docstore=InMemoryDocstore({}),
+            index_to_docstore_id={},
+        )
 
 
 def add_vulnerability_prompt(store) -> None:
