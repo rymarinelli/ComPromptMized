@@ -106,48 +106,47 @@ def get_summarizer():
 
 @st.cache_resource
 def load_vectorstore():
-    """Load or initialize the FAISS vector store used for RAG."""
+    """Load or initialize the FAISS vector store used for RAG.
+
+    When the pre-built index is missing, we create an empty store so the
+    rest of the demo can continue to function.
+    """
     if FAISS is None or HuggingFaceEmbeddings is None:
         st.sidebar.warning("LangChain not installed; RAG demo disabled.")
         return None
 
-    try:
+    # Ensure the sentence transformers package is available for the embedding
+    try:  # pragma: no cover - optional dependency
         import sentence_transformers  # type: ignore  # noqa: F401
-    except Exception as exc:
-
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-    except ModuleNotFoundError as exc:
-
-
+    except Exception as exc:  # pragma: no cover - dependency failure
+        st.sidebar.error("`sentence-transformers` is required for embeddings.")
+        st.sidebar.exception(exc)
+        return None
 
     try:
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
     except Exception as exc:  # pragma: no cover - embedding init failure
+        st.sidebar.error("Failed to load embeddings model.")
+        st.sidebar.exception(exc)
+        return None
 
-
+    # Try to load an existing FAISS index from disk
     try:
         return FAISS.load_local(
             str(VECTOR_STORE_DIR), embeddings, allow_dangerous_deserialization=True
         )
     except Exception:
+        # No existing index found; create an empty one
         VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
         try:
             import faiss  # type: ignore
             from langchain.docstore import InMemoryDocstore  # type: ignore
 
-
-            sample = embeddings.embed_query("")
-            if not sample:
-                raise ValueError("Empty embedding returned")
-            dimension = len(sample)
-
-            dimension = len(embeddings.embed_query(""))
-
-            index = faiss.IndexFlatL2(dimension)
+            # Determine embedding dimensionality
+            sample = embeddings.embed_query("placeholder")
+            index = faiss.IndexFlatL2(len(sample))
             return FAISS(
                 embedding_function=embeddings,
                 index=index,
