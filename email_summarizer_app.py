@@ -16,8 +16,11 @@ from email.message import EmailMessage
 
 import streamlit as st
 try:  # pragma: no cover - optional dependency
-    from langchain.embeddings import HuggingFaceEmbeddings
     from langchain.vectorstores import FAISS
+    try:  # Prefer the standalone package to avoid deprecation warnings
+        from langchain_huggingface import HuggingFaceEmbeddings
+    except ModuleNotFoundError:  # fall back to deprecated import
+        from langchain.embeddings import HuggingFaceEmbeddings
 except ModuleNotFoundError:  # pragma: no cover - missing langchain
     HuggingFaceEmbeddings = FAISS = None  # type: ignore
 
