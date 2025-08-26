@@ -17,10 +17,7 @@ from email.message import EmailMessage
 import streamlit as st
 try:  # pragma: no cover - optional dependency
     from langchain.vectorstores import FAISS
-    try:  # Prefer the standalone package to avoid deprecation warnings
-        from langchain_huggingface import HuggingFaceEmbeddings
-    except ModuleNotFoundError:  # fall back to deprecated import
-        from langchain.embeddings import HuggingFaceEmbeddings
+    from langchain_huggingface import HuggingFaceEmbeddings
 except ModuleNotFoundError:  # pragma: no cover - missing langchain
     HuggingFaceEmbeddings = FAISS = None  # type: ignore
 
@@ -118,14 +115,6 @@ def load_vectorstore():
         st.sidebar.warning("LangChain not installed; RAG demo disabled.")
         return None
 
-    # Ensure the sentence transformers package is available for the embedding
-    try:  # pragma: no cover - optional dependency
-        import sentence_transformers  # type: ignore  # noqa: F401
-    except Exception as exc:  # pragma: no cover - dependency failure
-        st.sidebar.error("`sentence-transformers` is required for embeddings.")
-        st.sidebar.exception(exc)
-        return None
-
     try:
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -141,25 +130,18 @@ def load_vectorstore():
             str(VECTOR_STORE_DIR), embeddings, allow_dangerous_deserialization=True
         )
     except Exception:
-        # No existing index found; create an empty one
         VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
-        try:
-            import faiss  # type: ignore
-            from langchain.docstore import InMemoryDocstore  # type: ignore
+        import faiss  # type: ignore
+        from langchain.docstore import InMemoryDocstore  # type: ignore
 
-            # Determine embedding dimensionality
-            sample = embeddings.embed_query("placeholder")
-            index = faiss.IndexFlatL2(len(sample))
-            return FAISS(
-                embedding_function=embeddings,
-                index=index,
-                docstore=InMemoryDocstore({}),
-                index_to_docstore_id={},
-            )
-        except Exception as exc:  # pragma: no cover - faiss init failure
-            st.sidebar.error("Failed to initialize empty vector store.")
-            st.sidebar.exception(exc)
-            return None
+        dim = len(embeddings.embed_query("placeholder"))
+        index = faiss.IndexFlatL2(dim)
+        return FAISS(
+            embedding_function=embeddings,
+            index=index,
+            docstore=InMemoryDocstore({}),
+            index_to_docstore_id={},
+        )
 
 
 def add_vulnerability_prompt(store) -> None:
